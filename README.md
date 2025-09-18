@@ -17,9 +17,10 @@ User → Claude Code → MCP Server → Leegality APIs → Workflow Created
 ```
 
 **Why This Architecture Works:**
-- **Claude Code**: Handles natural language parsing and JSON generation
+- **Claude Code**: Enhanced 3-step NLP parsing with entity separation
 - **MCP Server**: Orchestrates Leegality API calls (CREATE → UPDATE → APPROVE)
-- **Clean Separation**: NLP complexity in Claude Code, API complexity in MCP server
+- **Clean Separation**: Advanced NLP in Claude Code, API complexity in MCP server
+- **Entity Validation**: Prevents document/invitee confusion and parsing errors
 
 ## 🚀 Quick Start
 

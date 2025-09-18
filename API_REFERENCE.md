@@ -2,7 +2,7 @@
 
 ## 📚 Technical Reference Documentation
 
-Complete API reference for the Leegality Workflow Builder system, including MCP tools, API methods, and data structures.
+Complete API reference for the Leegality Workflow Builder system, including MCP tools, API methods, and data structures with enhanced NLP parsing capabilities.
 
 ## 🛠️ MCP Tools Reference
 
@@ -300,9 +300,17 @@ DOCUMENT_UUIDS = {
 # Position 17: Must be "8", "9", "a", or "b" (variant bits)
 ```
 
-**Usage Example:**
+**Enhanced NLP Parsing Examples:**
 - "2 documents A and B" → Document A gets UUID #1, Document B gets UUID #2
+- "3 invitees: John, Mary, Bob" → 3 separate invitee objects created
+- "John (aadhaar), Mary (DSC)" → Individual eSign type assignments
 - Document assignments: `"/documents/{uuid}"`
+
+**Entity Separation Validation:**
+- Documents and invitees parsed as separate entities
+- No overlap between document names and invitee names  
+- Count validation: "3 invitees" creates exactly 3 objects
+- Individual eSign parsing prevents assignment errors
 
 ### eSign Types
 

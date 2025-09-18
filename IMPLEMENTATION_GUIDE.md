@@ -34,6 +34,76 @@ workflow-create-prompt-2/
 └── .gitignore                         # Security-focused Python gitignore
 ```
 
+## 🧠 Enhanced NLP Parsing System
+
+### Critical Parsing Improvements
+
+**PROBLEM SOLVED**: Previous parsing logic confused document names with invitee names and missed eSign assignments.
+
+**SOLUTION**: 3-Step Enhanced Parsing Approach
+
+#### Step 1: Entity Identification First
+```
+Before JSON generation:
+1. DOCUMENTS: Look for "documents:", "docs:", "files:" + names
+2. INVITEES: Look for "invitees:", "signers:", "people:" + names  
+3. ESIGN: Look for "(aadhaar)", "(DSC)", "(virtual)" after names
+```
+
+#### Step 2: Pattern-Based Parsing
+```
+Input: "2 documents: Rahul, Sachin"
+Output: Documents: ["Rahul", "Sachin"]
+
+Input: "3 invitees: Sid, Dhanendra, Ronit" 
+Output: Invitees: ["Sid", "Dhanendra", "Ronit"]
+
+Input: "Sid (aadhaar), Ronit (DSC)"
+Output: Sid→aadhaar, Ronit→DSC
+```
+
+#### Step 3: Mistake Prevention
+- ❌ **WRONG**: Document names treated as invitee names
+- ✅ **RIGHT**: Complete entity separation
+- ❌ **WRONG**: Missing invitees from count
+- ✅ **RIGHT**: Exact count matching (3 invitees = 3 objects)
+
+#### Parsing Validation Checklist
+- [ ] Document count matches document names extracted
+- [ ] Invitee count matches invitee names extracted  
+- [ ] No overlap between document and invitee names
+- [ ] Each invitee has correct eSign assignment
+- [ ] All mentioned people included as invitees
+
+#### Before/After Parsing Examples
+
+**❌ BEFORE (Parsing Issues):**
+```
+Input: "Create workflow with 2 documents Rahul and Sachin. 3 invitees: Sid, Dhanendra and Ronit"
+OLD PARSING RESULT:
+- Documents: ["Rahul"]  ← Missing Sachin
+- Invitees: ["Rahul", "Sachin", "Sid"]  ← Document names confused as invitees
+- Missing: Dhanendra, Ronit  ← Invitees not parsed correctly
+```
+
+**✅ AFTER (Enhanced Parsing):**
+```
+Input: "Create workflow with 2 documents Rahul and Sachin. 3 invitees: Sid, Dhanendra and Ronit"
+NEW PARSING RESULT:
+Step 1 - Entity Recognition:
+- Documents section: "2 documents Rahul and Sachin" → ["Rahul", "Sachin"]
+- Invitees section: "3 invitees: Sid, Dhanendra and Ronit" → ["Sid", "Dhanendra", "Ronit"]
+
+Step 2 - Validation:
+- Document count: 2 = ["Rahul", "Sachin"] ✅
+- Invitee count: 3 = ["Sid", "Dhanendra", "Ronit"] ✅
+- No overlap between entities ✅
+
+Step 3 - JSON Generation:
+- workflowData.documents: 2 objects with correct UUIDs
+- workflowData.invitees.inviteeCards: 3 objects with proper structure
+```
+
 ## 🛠️ Implementation Details
 
 ### 1. Core Components
@@ -47,10 +117,10 @@ workflow-create-prompt-2/
 - `_step2_update_workflow(id, version, payload)` - UPDATE: Add JSON data
 - `_step3_approve_workflow(id, version)` - APPROVE: Publish workflow
 
-**What We DON'T Use in MCP (Claude Code handles this):**
-- `create_workflow_from_text()` - Natural language processing
-- `_parse_natural_language()` - Prompt parsing
-- `_generate_workflow_payload()` - JSON generation
+**What We DON'T Use in MCP (Claude Code handles this with Enhanced NLP):**
+- `create_workflow_from_text()` - Natural language processing (now enhanced)
+- `_parse_natural_language()` - Prompt parsing (replaced with 3-step approach)
+- `_generate_workflow_payload()` - JSON generation (uses entity separation)
 
 #### FastMCP Server (`mcp_server.py`)
 **Purpose**: Bridge between Claude Code and Leegality APIs.
