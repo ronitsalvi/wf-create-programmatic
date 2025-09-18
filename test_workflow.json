@@ -35,38 +35,143 @@
     "documents": [
       {
         "id": "7de55cac-812f-471a-b99f-6faaa0e386d0",
-        "name": "Document A",
-        "required": true,
-        "uploadEnabled": false
+        "subDocuments": [],
+        "stamps": {
+          "mergedDocumentStamp": true,
+          "stampSeries": {
+            "stampSeriesEnabled": false,
+            "seriesConfig": [{}]
+          }
+        },
+        "documentName": "Document A",
+        "irn": "DOC-A-123"
       },
       {
-        "id": "8ef66dbd-923g-582b-c00g-7gbbb1f497e1", 
-        "name": "Document B",
-        "required": true,
-        "uploadEnabled": false
+        "id": "8ef66dbd-923f-4582-b00f-7fbbb1f497e1",
+        "subDocuments": [],
+        "stamps": {
+          "mergedDocumentStamp": true,
+          "stampSeries": {
+            "stampSeriesEnabled": false,
+            "seriesConfig": [{}]
+          }
+        },
+        "documentName": "Document B",
+        "irn": "DOC-B-456"
       }
     ],
-    "invitees": [
-      {
-        "id": "inv-001",
-        "name": "John Doe",
-        "email": "john@example.com",
-        "signType": "aadhaar",
-        "documentAssignments": [
-          "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0",
-          "/documents/8ef66dbd-923g-582b-c00g-7gbbb1f497e1"
-        ]
-      },
-      {
-        "id": "inv-002",
-        "name": "Jane Smith", 
-        "email": "jane@example.com",
-        "signType": "dsc",
-        "documentAssignments": [
-          "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0"
-        ]
-      }
-    ],
+    "invitees": {
+      "setSigningOrder": true,
+      "inviteeCards": [
+        {
+          "id": "b598208a-9c57-4b3a-91bf-29a9adc57444",
+          "inviteeCard": {
+            "inviteeType": "signer",
+            "inviteeSigningLevel": 1,
+            "inviteeDetails": [
+              {
+                "id": "758a2424-b136-4cd0-a45a-435b75420e5e",
+                "inviteeName": "John Doe",
+                "inviteeEmail": "john@example.com",
+                "inviteeNumber": "9876543210"
+              }
+            ],
+            "inviteeSettings": {
+              "securityOptions": {
+                "twoFa": false,
+                "oneFa": true,
+                "enableGps": false,
+                "faceCapture": true
+              }
+            },
+            "combinations": [
+              {
+                "id": "a559f93d-e406-4cc9-a314-3428c1399158",
+                "assignedDocuments": [
+                  {
+                    "documentReference": "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0",
+                    "role": "signer",
+                    "id": "74d7391e-d5ac-4635-8801-25bbc60bafd0"
+                  },
+                  {
+                    "documentReference": "/documents/8ef66dbd-923f-4582-b00f-7fbbb1f497e1",
+                    "role": "signer",
+                    "id": "74d7391e-d5ac-4635-8801-25bbc60bafd1"
+                  }
+                ],
+                "combinationSettings": {
+                  "esignTypes": {
+                    "aadharEsign": {
+                      "aadharEsignEnabled": true,
+                      "addharEsignConfig": {
+                        "aadhaarOtp": true,
+                        "aadhaarBio": false,
+                        "aadhaarIris": false,
+                        "aadhaarFace": false
+                      }
+                    },
+                    "virtualEsign": {
+                      "virtualEsignEnabled": false
+                    },
+                    "dscToken": {
+                      "enableDscToken": false
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "c598208a-9c57-4b3a-91bf-29a9adc57445",
+          "inviteeCard": {
+            "inviteeType": "signer",
+            "inviteeSigningLevel": 2,
+            "inviteeDetails": [
+              {
+                "id": "858a2424-b136-4cd0-a45a-435b75420e5f",
+                "inviteeName": "Jane Smith",
+                "inviteeEmail": "jane@example.com",
+                "inviteeNumber": "9876543211"
+              }
+            ],
+            "inviteeSettings": {
+              "securityOptions": {
+                "twoFa": false,
+                "oneFa": true,
+                "enableGps": false,
+                "faceCapture": false
+              }
+            },
+            "combinations": [
+              {
+                "id": "b559f93d-e406-4cc9-a314-3428c1399159",
+                "assignedDocuments": [
+                  {
+                    "documentReference": "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0",
+                    "role": "signer",
+                    "id": "84d7391e-d5ac-4635-8801-25bbc60bafd0"
+                  }
+                ],
+                "combinationSettings": {
+                  "esignTypes": {
+                    "aadharEsign": {
+                      "aadharEsignEnabled": false
+                    },
+                    "virtualEsign": {
+                      "virtualEsignEnabled": false
+                    },
+                    "dscToken": {
+                      "enableDscToken": true
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
     "workflow": {
       "name": "Test Workflow - 2 Documents A and B",
       "description": "Testing core bug fix: should create 2 documents",

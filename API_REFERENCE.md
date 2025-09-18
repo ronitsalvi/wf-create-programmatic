@@ -284,20 +284,20 @@ Authorization: Bearer {token}
 
 ### Pre-defined UUID Mapping
 
-**Document UUIDs:**
+**Document UUIDs (UUID v4 Compliant):**
 ```python
 DOCUMENT_UUIDS = {
     1: "7de55cac-812f-471a-b99f-6faaa0e386d0",
-    2: "8ef66dbd-923g-582b-c00g-7gbbb1f497e1",
-    3: "9fg77ece-034h-693c-d11h-8hccc2g508f2",
-    4: "0gh88fdf-145i-704d-e22i-9iddd3h619g3",
-    5: "1hi99geg-256j-815e-f33j-0jeee4i720h4",
-    6: "2ij00hfh-367k-926f-g44k-1kfff5j831i5",
-    7: "3jk11igi-478l-037g-h55l-2lggg6k942j6",
-    8: "4kl22jhj-589m-148h-i66m-3mhhh7l053k7",
-    9: "5lm33kik-690n-259i-j77n-4niii8m164l8",
-    10: "6mn44ljl-701o-360j-k88o-5ojjj9n275m9"
+    2: "8ef66dbd-923f-4582-b00f-7fbbb1f497e1",
+    3: "9f077ece-034f-493c-8d1e-8eccc2e508f2",
+    4: "0ae88fdf-145f-404d-9e2d-9dddd3d619f3",
+    5: "1bf99aea-256f-415e-af3e-0eeee4e720f4"
 }
+
+# UUID v4 Validation Regex:
+# /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/
+# Position 13: Must be "4" (version bit)
+# Position 17: Must be "8", "9", "a", or "b" (variant bits)
 ```
 
 **Usage Example:**

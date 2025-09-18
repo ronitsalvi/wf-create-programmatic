@@ -123,9 +123,11 @@ import time      # Processing time tracking
 **Pre-defined UUID Mapping** (from response.md):
 ```
 Document 1 → 7de55cac-812f-471a-b99f-6faaa0e386d0
-Document 2 → 8ef66dbd-923g-582b-c00g-7gbbb1f497e1  
-Document 3 → 9fg77ece-034h-693c-d11h-8hccc2g508f2
-[... up to Document 10]
+Document 2 → 8ef66dbd-923f-4582-b00f-7fbbb1f497e1  
+Document 3 → 9f077ece-034f-493c-8d1e-8eccc2e508f2
+Document 4 → 0ae88fdf-145f-404d-9e2d-9dddd3d619f3
+Document 5 → 1bf99aea-256f-415e-af3e-0eeee4e720f4
+[UUID v4 Compliant - Position 13="4", Position 17="8"|"9"|"a"|"b"]
 ```
 
 **Usage**: When user says "3 documents: A, B, C":
