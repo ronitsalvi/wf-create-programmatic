@@ -1,0 +1,77 @@
+{
+  "dynamicProperties": {
+    "uploadDocumentEnabled#p": {
+      "v": false,
+      "m": false,
+      "e": false
+    },
+    "allowEdit#p": {
+      "v": true,
+      "m": false,
+      "e": false
+    },
+    "documentName1#p": {
+      "v": "Document A",
+      "m": false,
+      "e": false
+    },
+    "documentName2#p": {
+      "v": "Document B", 
+      "m": false,
+      "e": false
+    },
+    "inviteeName1#p": {
+      "v": "John Doe",
+      "m": false,
+      "e": false
+    },
+    "inviteeName2#p": {
+      "v": "Jane Smith",
+      "m": false,
+      "e": false
+    }
+  },
+  "workflowData": {
+    "documents": [
+      {
+        "id": "7de55cac-812f-471a-b99f-6faaa0e386d0",
+        "name": "Document A",
+        "required": true,
+        "uploadEnabled": false
+      },
+      {
+        "id": "8ef66dbd-923g-582b-c00g-7gbbb1f497e1", 
+        "name": "Document B",
+        "required": true,
+        "uploadEnabled": false
+      }
+    ],
+    "invitees": [
+      {
+        "id": "inv-001",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "signType": "aadhaar",
+        "documentAssignments": [
+          "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0",
+          "/documents/8ef66dbd-923g-582b-c00g-7gbbb1f497e1"
+        ]
+      },
+      {
+        "id": "inv-002",
+        "name": "Jane Smith", 
+        "email": "jane@example.com",
+        "signType": "dsc",
+        "documentAssignments": [
+          "/documents/7de55cac-812f-471a-b99f-6faaa0e386d0"
+        ]
+      }
+    ],
+    "workflow": {
+      "name": "Test Workflow - 2 Documents A and B",
+      "description": "Testing core bug fix: should create 2 documents",
+      "templateId": "f214c92a-8f67-489a-a4c6-2ef5ae0472c4",
+      "templateVersion": "0.1"
+    }
+  }
+}
