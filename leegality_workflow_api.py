@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Complete Leegality Workflow API Integration
-End-to-end workflow creation with natural language parsing
+AI-Powered workflow creation with Gemini natural language processing
 Fixes the core bug: "Create workflow with 2 documents A and B" now creates 2 documents
 """
 
@@ -11,6 +11,8 @@ import uuid
 import time
 from typing import Dict, List, Any, Optional
 from datetime import datetime
+import google.generativeai as genai
+import os
 
 class LeegalityWorkflowAPI:
     """Complete API integration for Leegality workflow creation"""
@@ -23,6 +25,11 @@ class LeegalityWorkflowAPI:
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
+        
+        # Initialize Gemini AI configuration
+        self.gemini_api_key = "AIzaSyDlwtCyXrlhQzMCAvK8QEEbh46D2AFf-xc"
+        self.gemini_model = "gemini-2.5-flash"
+        self.gemini_base_url = "https://generativelanguage.googleapis.com"
         self.template_id = "f214c92a-8f67-489a-a4c6-2ef5ae0472c4"
         self.template_version = "0.1"
     
@@ -41,9 +48,14 @@ class LeegalityWorkflowAPI:
         try:
             print(f"🚀 Starting workflow creation: '{user_requirement}'")
             
-            # Parse natural language input
-            parsed_data = self._parse_natural_language(user_requirement)
-            print(f"📝 Parsed: {parsed_data['documents']} documents, {parsed_data['invitees']} invitees")
+            # Parse natural language input with AI - returns complete JSON
+            workflow_payload = self._parse_natural_language(user_requirement)
+            
+            # Extract metadata for logging
+            doc_count = len(workflow_payload.get('workflowData', {}).get('documents', []))
+            invitee_cards = workflow_payload.get('workflowData', {}).get('invitees', {}).get('inviteeCards', [])
+            invitee_count = len(invitee_cards)
+            print(f"📝 AI Generated: {doc_count} documents, {invitee_count} invitees")
             
             # STEP 1: Create workflow
             print("📋 Step 1: Creating workflow...")
@@ -55,10 +67,7 @@ class LeegalityWorkflowAPI:
             version = workflow_data['version']
             print(f"✅ Workflow created: {workflow_id} (v{version})")
             
-            # STEP 2: Generate and update workflow
-            print("🔧 Step 2: Generating workflow structure...")
-            workflow_payload = self._generate_workflow_payload(parsed_data)
-            
+            # STEP 2: Update workflow with AI-generated JSON (no payload generation needed)
             print("📤 Step 2: Updating workflow...")
             update_result = self._step2_update_workflow(workflow_id, version, workflow_payload)
             if not update_result['success']:
@@ -81,9 +90,9 @@ class LeegalityWorkflowAPI:
                 'workflow_version': version,
                 'status': 'PUBLISHED',
                 'processing_time': f"{processing_time} seconds",
-                'documents_created': len(parsed_data['documents']),
-                'invitees_created': len(parsed_data['invitees']),
-                'parsed_data': parsed_data
+                'documents_created': doc_count,
+                'invitees_created': invitee_count,
+                'ai_payload': workflow_payload
             }
             
             print(f"🎊 SUCCESS! Workflow {workflow_id} created in {processing_time}s")
@@ -100,123 +109,106 @@ class LeegalityWorkflowAPI:
                 'processing_time': f"{round(time.time() - start_time, 1)} seconds"
             }
     
-    def _parse_natural_language(self, text: str) -> Dict[str, Any]:
+    def _parse_with_ai(self, user_requirement: str) -> Dict[str, Any]:
         """
-        Enhanced natural language parsing - handles complex workflows
-        Supports documents, signers with specific eSign types, and emails
+        AI-Powered natural language parsing using Gemini REST API
+        Returns complete Leegality workflow JSON ready for API
         """
-        original_text = text
-        text = text.lower().strip()
-        
-        # Extract documents using semantic understanding
-        documents = []
-        
-        # Pattern 1: "3 documents: Sanction Letter, Loan Agreement, Bank Guarantee"
-        if "documents:" in text:
-            after_colon = text.split("documents:")[1].split(".")[0]
-            documents.extend(self._extract_entities_from_phrase(after_colon))
-        
-        # Pattern 2: "documents A and B" or "documents A, B, C"
-        elif "documents" in text:
-            after_docs = text.split("documents")[1].split(".")[0]
-            documents.extend(self._extract_entities_from_phrase(after_docs))
-        
-        # Pattern 3: "with 2 documents A and B"
-        if "with" in text and not documents:
-            after_with = text.split("with")[1]
-            if "documents" in after_with:
-                after_docs = after_with.split("documents")[1].split(".")[0]
-                documents.extend(self._extract_entities_from_phrase(after_docs))
-        
-        # Pattern 4: Extract any capital letters that might be document names
-        if not documents:
-            import re
-            caps = re.findall(r'\b[A-Z]\b', original_text)
-            if caps:
-                documents = caps[:5]
-        
-        # Default fallback
-        if not documents:
-            documents = ['Document1']
-        
-        # Extract invitees/signers with enhanced parsing
-        invitees = []
-        invitee_details = []
-        
-        # Pattern 1: "4 signers: Bank Signatory (aadhaar eSign), Customer (DSC)..."
-        if "signers:" in text:
-            signers_section = text.split("signers:")[1].split(".")[0]
-            invitee_details = self._parse_complex_signers(signers_section, original_text)
-        
-        # Extract just the names for backward compatibility
-        if invitee_details:
-            invitees = [detail['name'] for detail in invitee_details]
-        else:
-            # Fallback to simple parsing
-            known_names = ["ronit", "sachin", "john", "mary", "alice", "bob"]
-            for name in known_names:
-                if name in text:
-                    invitees.append(name.title())
+        try:
+            # Load the enhanced prompt template
+            prompt_path = os.path.join(os.path.dirname(__file__), "ENHANCED_NLP_PROMPT.md")
+            with open(prompt_path, 'r') as f:
+                prompt_template = f.read()
             
-            roles = ["signer", "signatory", "customer", "bank", "client", "manager", "subordinate"]
-            for role in roles:
-                if role in text:
-                    invitees.append(role.title())
+            # Replace {USER_INPUT} with actual requirement
+            full_prompt = prompt_template.replace("{USER_INPUT}", user_requirement)
             
-            if not invitees:
-                invitees = ['Signer1', 'Signer2']
-        
-        # Extract emails with position context
-        emails = []
-        email_assignments = {}  # Maps signer position/name to email
-        import re
-        email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        emails = re.findall(email_pattern, original_text)
-        
-        # Parse email assignments with context
-        if emails:
-            # Look for patterns like "First signer email:", "Second signer email:", "Signer 1 email:", etc.
-            email_context_patterns = [
-                r'first\s+signer\s+email[:\s]+([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})',
-                r'second\s+signer\s+email[:\s]+([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})',
-                r'signer\s+(\d+)\s+email[:\s]+([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})',
-                r'([A-Za-z\s]+)\s+email[:\s]+([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,})',
-            ]
+            print("🤖 Processing with Gemini AI...")
             
-            for pattern in email_context_patterns:
-                matches = re.findall(pattern, original_text.lower())
-                for match in matches:
-                    if len(match) == 2:  # signer identifier and email
-                        if match[0].isdigit():  # "signer 1 email"
-                            email_assignments[int(match[0]) - 1] = match[1]  # 0-based index
-                        elif 'first' in match[0]:  # "first signer email"
-                            email_assignments[0] = match[1]
-                        elif 'second' in match[0]:  # "second signer email"  
-                            email_assignments[1] = match[1]
-                        else:  # signer name pattern
-                            email_assignments[match[0].strip()] = match[1]
-                    else:  # single match (email context pattern)
-                        if 'first' in pattern:
-                            email_assignments[0] = match
-                        elif 'second' in pattern:
-                            email_assignments[1] = match
+            # Call Gemini API using REST approach
+            ai_response = self._call_gemini_api(full_prompt)
+            
+            if not ai_response:
+                raise Exception("Empty response from Gemini API")
+            
+            # Parse JSON response
+            json_response = self._parse_gemini_response(ai_response)
+            
+            print("✅ AI parsing completed successfully")
+            return json_response
+            
+        except json.JSONDecodeError as e:
+            print(f"❌ JSON parsing error: {str(e)}")
+            print(f"AI Response: {ai_response[:500] if ai_response else 'None'}...")
+            raise Exception(f"Invalid JSON from AI: {str(e)}")
+            
+        except Exception as e:
+            print(f"❌ AI processing failed: {str(e)}")
+            raise Exception(f"AI parsing failed: {str(e)}")
+
+    def _call_gemini_api(self, prompt: str) -> str:
+        """Call Gemini API using REST endpoint"""
+        url = f"{self.gemini_base_url}/v1beta/models/{self.gemini_model}:generateContent"
         
-        # Detect default eSign type (for simple cases)
-        default_esign = "virtualEsign"
-        if "aadhaar" in text or "aadhar" in text:
-            default_esign = "aadharEsign"
-        elif "dsc" in text:
-            default_esign = "dscToken"
-        
-        return {
-            'documents': documents,
-            'invitees': invitees,
-            'invitee_details': invitee_details,
-            'emails': emails,
-            'email_assignments': email_assignments,
-            'esign_type': default_esign,
-            'original_text': original_text
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.gemini_api_key
         }
+        
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ],
+            "generationConfig": {
+                "temperature": 0.1,
+                "topK": 1,
+                "topP": 0.8,
+                "maxOutputTokens": 32768,
+            }
+        }
+        
+        try:
+            response = requests.post(url, json=payload, headers=headers, timeout=120)
+            response.raise_for_status()
+            
+            response_data = response.json()
+            
+            # Extract text from Gemini response
+            if 'candidates' in response_data and response_data['candidates']:
+                candidate = response_data['candidates'][0]
+                if 'content' in candidate and 'parts' in candidate['content']:
+                    return candidate['content']['parts'][0]['text']
+            
+            raise Exception(f"No valid response from Gemini API. Response: {response_data}")
+            
+        except requests.RequestException as e:
+            print(f"Gemini API request failed: {str(e)}")
+            raise Exception(f"Gemini API call failed: {str(e)}")
+        except Exception as e:
+            print(f"Gemini API response parsing failed: {str(e)}")
+            raise Exception(f"Failed to parse Gemini response: {str(e)}")
+
+    def _parse_gemini_response(self, text: str) -> Dict[str, Any]:
+        """Parse Gemini AI response text into JSON structure"""
+        # Remove any markdown formatting
+        text = text.strip()
+        if text.startswith('```json'):
+            text = text.replace('```json', '').replace('```', '').strip()
+        if text.startswith('```'):
+            text = text.replace('```', '').strip()
+        
+        # Parse JSON
+        return json.loads(text)
+
+    def _parse_natural_language(self, text: str) -> Dict[str, Any]:
+        """Wrapper method for backward compatibility - now uses AI"""
+        return self._parse_with_ai(text)
     
     def _parse_complex_signers(self, signers_text: str, original_text: str) -> List[Dict[str, Any]]:
         """Parse complex signer specifications with eSign types"""
@@ -371,7 +363,7 @@ class LeegalityWorkflowAPI:
                 "versionDescription": "Created via NLP Python Interface"
             }
             
-            response = requests.post(url, headers=self.headers, json=payload, timeout=30)
+            response = requests.post(url, headers=self.headers, json=payload, timeout=120)
             
             if response.status_code not in [200, 201]:
                 return {
@@ -403,7 +395,7 @@ class LeegalityWorkflowAPI:
         try:
             url = f"{self.base_url}/workflow-manager/v1/workflow/{workflow_id}/{version}"
             
-            response = requests.put(url, headers=self.headers, json=payload, timeout=30)
+            response = requests.put(url, headers=self.headers, json=payload, timeout=120)
             
             if response.status_code != 200:
                 return {
@@ -430,7 +422,7 @@ class LeegalityWorkflowAPI:
                 "version": version
             }
             
-            response = requests.patch(url, headers=self.headers, json=payload, timeout=30)
+            response = requests.patch(url, headers=self.headers, json=payload, timeout=120)
             
             if response.status_code != 200:
                 return {
@@ -558,7 +550,7 @@ class LeegalityWorkflowAPI:
                     "inviteeDetails": [{
                         "id": invitee_detail_id,
                         "inviteeLabel": invitee_data['name'],
-                        "inviteeEmail": invitee_data.get('email') if invitee_data.get('email') else f"user{i+1}@example.com"  # API requires valid email
+                        "inviteeEmail": invitee_data.get('email') or f"placeholder{i+1}@leegality.com"  # Valid placeholder if no email provided
                     }],
                     "inviteeSettings": {
                         "securityOptions": {
@@ -758,47 +750,41 @@ def create_application_workflow():
     """Create application workflow with specific requirements"""
     
     # Updated bearer token
-    BEARER_TOKEN = "eyJ4NXQjUzI1NiI6ImxZYnVTSk9JR1E1MmhNUy1DeWJVb1A0RTExdFpnd3RjRWd1bHYwa0RuT0UiLCJraWQiOiJmZWM4MDNlNC00OWZlLTQ4ZmEtODc2YS0yNWMxZmFlNWUwMmYiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrYXZpc2guc2F4ZW5hQGxlZWdhbGl0eS5jb20iLCJhdWQiOiJpbnN0YW50LWxvZ2luLWFwcCIsIm5iZiI6MTc1ODE0MTE5OSwic2NvcGUiOlsiKiJdLCJpc3MiOiJodHRwczovL3ByZXByb2QtZ2F0ZXdheS5sZWVnYWxpdHkuY29tL2F1dGgiLCJleHAiOjE3NTgxNDQ3OTksImlhdCI6MTc1ODE0MTE5OSwianRpIjoiODI5ZjA0OTMtNWI4Zi00MzRkLTg4YzQtYzJhYzQxYjAwMTkwIn0.Z9CyqdCtOnZ2k7DPgLBEj9ww0RUyOKoJCZqXV_2AyV8ne5cGyLVIP8Qo8V3cFH3Nc2lHkQogMi-_jKT8ejySnuOD_XO-eJysZJq-VOEBerYWzFj39Ogc6jLpQKcoI2_R_ubqsAK068R1Qioueo2YSry-Ruji7d9145r2fjs0dc6YV91B9YDo2yifNK8dzkaPp4K-8V4mXdgjLqBZnEkJsxU5VFyMqycGJ_-dVvT78ylNqj9usJPSjUE8lm4A0rUaHQaWQFc55WhdbszVghqddKVT1AtMUwBBprPmduquz4FvZhDkMLea-O9eCEubWNzkW6qODtvwsPb-Lq-2PQ3f0Q"
+    BEARER_TOKEN = "eyJ4NXQjUzI1NiI6ImxZYnVTSk9JR1E1MmhNUy1DeWJVb1A0RTExdFpnd3RjRWd1bHYwa0RuT0UiLCJraWQiOiJmZWM4MDNlNC00OWZlLTQ4ZmEtODc2YS0yNWMxZmFlNWUwMmYiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrYXZpc2guc2F4ZW5hQGxlZWdhbGl0eS5jb20iLCJhdWQiOiJpbnN0YW50LWxvZ2luLWFwcCIsIm5iZiI6MTc1ODE0MzM4Miwic2NvcGUiOlsiKiJdLCJpc3MiOiJodHRwczovL3ByZXByb2QtZ2F0ZXdheS5sZWVnYWxpdHkuY29tL2F1dGgiLCJleHAiOjE3NTgxNDY5ODIsImlhdCI6MTc1ODE0MzM4MiwianRpIjoiZTZmMjdjNGUtMTQzNC00MmM3LTlkMTEtMmYzM2M0ODFkNGY4In0.BbGNk4SWfSqZCHC0W1LqjE82lvY1sGWqCGk1HGHfcVDXJRdoNz-wvXWMiivZJe8tMKYJ3W-nCvwgCBQrMoRPjNdh0xRdA4uEZPJXGnUbsYLVE8nNt2NKl74EsZaDbO1xkKZmkxO6JNSe8YMVMKnqKA11w8q-POd5Ue5e5nwuWm6YyVK7r9c5MhsD4L6I-jfTNVq8wkKQc2m8rQILkP9I7nKQHKJc8r4LzHsO1qWc2qMUKNKJcI5O6KQPQfVJfQ8A7a7xCz6L1lMVNTG0H4e8nBkN7DyXDQqUmJlGf8Ckyw3E5kKxk3TBV1m9U9-_BI7F8xL-ksAhMGTxBTUFLKe0nw"
+
+
+def create_ronit_sid_workflow():
+    """Create workflow with 2 documents (Sanction Letter, Loan Agreement) and 3 invitees (Ronit: ronit@leegality.com, Sid, unnamed)"""
+    
+    # Updated valid bearer token  
+    BEARER_TOKEN = "eyJ4NXQjUzI1NiI6ImxZYnVTSk9JR1E1MmhNUy1DeWJVb1A0RTExdFpnd3RjRWd1bHYwa0RuT0UiLCJraWQiOiJmZWM4MDNlNC00OWZlLTQ4ZmEtODc2YS0yNWMxZmFlNWUwMmYiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJrYXZpc2guc2F4ZW5hQGxlZWdhbGl0eS5jb20iLCJhdWQiOiJpbnN0YW50LWxvZ2luLWFwcCIsIm5iZiI6MTc1ODUyMDgzMywic2NvcGUiOlsiKiJdLCJpc3MiOiJodHRwczovL3ByZXByb2QtZ2F0ZXdheS5sZWVnYWxpdHkuY29tL2F1dGgiLCJleHAiOjE3NTg1MjQ0MzMsImlhdCI6MTc1ODUyMDgzMywianRpIjoiZmEyYTBkMzctYzY3My00YTEyLWE2YTItOTg1NTc1ODAyMDAzIn0.IkiTMAixHLV0Bb0mOVOWctdt_F_xnj93QpIqXKSUS9UTCNRtXkaMbxXU2T91-a-vp1-QMJK5lAyf8muwMql3VfnGYnBIQjwW_Qm-ipIdhK9Wl_pn2WjU2QYrKlHy774bo58Q83cDYnDIagPh0h-YQZYANDS4EPOLbosxJcZAzt5oOhTdpFLq9YcAGuRHmKFydW0-ORMCoeGh1RMxW-lyvOTp5UhU1Urwxu2zw9LV8OtpZl7bdUqdytTEKscOSiO_9DLQ8qbKSK3VB83R8yL1yeie7OevPv6jjJjJFNnFJ5-1MGkBw9G34xgadBclheX0KBnyV20vy5QsuRwd4APLyQ"
     
     # Initialize API client 
     api = LeegalityWorkflowAPI(BEARER_TOKEN)
     
-    # Create requirement exactly as specified
-    requirement = "Create workflow with 3 documents: Application Form, Loan doc, Addendum. 4 signers: Signer1 (aadhaar eSign), Signer2 (aadhaar eSign), Signer3 (DSC), Signer4 (DSC). Second signer email: vikas@leegality.com"
+    # Requirements: Bank loan processing with 3 documents, 4 signers with Aadhaar eSign
+    requirement = """Create a workflow for bank loan processing with 3 documents: Sanction Letter, Loan Agreement, and Bank Guarantee. Need 4 signers- Signer 1 name- Ronit, Signer 2 name: Sid, Signer 2 email: Sidhant@leegality.com. All 4 signers should have Aadhaar eSign configured"""
     
-    print(f"📋 Creating Application Workflow")
-    print(f"📝 Requirement: {requirement}")
-    print("=" * 80)
+    print(f"Creating workflow with requirement: {requirement}")
     
-    # Execute workflow creation using existing flow
-    result = api.create_workflow_from_text(requirement)
-    
-    # Display results
-    print("\n" + "=" * 80)
-    if result['success']:
-        print("✅ APPLICATION WORKFLOW CREATED SUCCESSFULLY!")
-        print(f"📋 Workflow ID: {result['workflow_id']}")
-        print(f"⏱️  Processing Time: {result['processing_time']}")
-        print(f"📄 Documents Created: {result['documents_created']}")
-        print(f"📝 Document Names: {', '.join(result['parsed_data']['documents'])}")
-        print(f"👥 Signers Created: {result['invitees_created']}")
-        print(f"👤 Signer Names: {', '.join(result['parsed_data']['invitees'])}")
-        print(f"📊 Status: {result['status']}")
+    try:
+        # Step 1: Create workflow
+        result = api.create_workflow_from_text(requirement)
         
-        # Additional details
-        if 'parsed_data' in result:
-            print(f"\n🔍 Parsing Details:")
-            print(f"   📋 Documents: {result['parsed_data']['documents']}")
-            print(f"   👥 Invitees: {result['parsed_data']['invitees']}")
-            if 'emails' in result['parsed_data']:
-                print(f"   📧 Emails: {result['parsed_data']['emails']}")
-            if 'email_assignments' in result['parsed_data']:
-                print(f"   📬 Email Assignments: {result['parsed_data']['email_assignments']}")
-    else:
-        print("❌ APPLICATION WORKFLOW CREATION FAILED!")
-        print(f"Error: {result['error']}")
-        
-    return result
+        if result and 'workflowId' in result:
+            workflow_id = result['workflowId']
+            print(f"✅ Workflow created successfully with ID: {workflow_id}")
+            return result
+        else:
+            print(f"❌ Failed to create workflow. Result: {result}")
+            return result
+            
+    except Exception as e:
+        print(f"❌ Error creating workflow: {str(e)}")
+        return None
+
+
+# Workflow creation functions above
 
 
 def test_email_parsing_fix():
@@ -885,4 +871,4 @@ def test_email_parsing_fix():
 
 
 if __name__ == "__main__":
-    create_application_workflow()
+    create_ronit_sid_workflow()
