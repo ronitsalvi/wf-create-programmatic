@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 FastMCP Server for Leegality Workflow Builder
-Provides 3 MCP tools for workflow creation using existing LeegalityWorkflowAPI
+Provides 4 MCP tools for workflow creation using existing LeegalityWorkflowAPI
 """
 
 from fastmcp import FastMCP
@@ -171,6 +171,57 @@ def update_and_approve(workflow_id: str, workflow_version: str, workflow_json: d
         }
 
 @mcp.tool()
+def create_workflow_from_natural_language(requirement: str, bearer_token: str) -> dict:
+    """
+    Pure MCP Flow: Natural Language → Gemini AI → MCP Tool (create_workflow) → Leegality APIs
+    
+    Args:
+        requirement: Natural language workflow requirement (e.g., "Create workflow with 2 documents A and B")
+        bearer_token: Bearer token for Leegality API authentication
+        
+    Returns:
+        Dict with success status, workflow_id, and details
+    """
+    start_time = time.time()
+    
+    try:
+        print(f"🧠 Starting natural language workflow creation (Pure MCP Flow)")
+        print(f"📝 Requirement: {requirement}")
+        
+        # Initialize API client (contains Gemini API integration)
+        api = LeegalityWorkflowAPI(bearer_token)
+        
+        # STEP 1: Natural Language → Gemini AI → JSON
+        print("🤖 Step 1: Processing with Gemini AI to generate workflow JSON...")
+        workflow_json = api._parse_with_ai(requirement)
+        print("✅ JSON generated successfully from natural language")
+        
+        # STEP 2: Call MCP tool with generated JSON
+        print("🔧 Step 2: Calling create_workflow MCP tool with generated JSON...")
+        result = create_workflow(workflow_json, bearer_token)
+        
+        # Add MCP-specific metadata
+        if result.get('success'):
+            result['flow_completed'] = 'Natural Language → Gemini AI → MCP Tool (create_workflow) → Leegality APIs'
+            result['mcp_tool'] = 'create_workflow_from_natural_language → create_workflow'
+            result['ai_generated_json'] = True
+        else:
+            result['mcp_tool'] = 'create_workflow_from_natural_language → create_workflow'
+            result['ai_generated_json'] = True
+        
+        return result
+        
+    except Exception as e:
+        error_msg = f"Natural language workflow creation failed: {str(e)}"
+        print(f"❌ ERROR: {error_msg}")
+        return {
+            'success': False,
+            'error': error_msg,
+            'processing_time': f"{round(time.time() - start_time, 1)} seconds",
+            'mcp_tool': 'create_workflow_from_natural_language'
+        }
+
+@mcp.tool()
 def create_and_approve(workflow_json: dict, bearer_token: str) -> dict:
     """
     CREATE → APPROVE (skip update step)
@@ -247,6 +298,7 @@ if __name__ == "__main__":
     print("📋 Available tools:")
     print("  1. create_workflow - CREATE → UPDATE → APPROVE (full workflow)")
     print("  2. update_and_approve - UPDATE → APPROVE (edit existing)")
-    print("  3. create_and_approve - CREATE → APPROVE (express, skip update)")
+    print("  3. create_workflow_from_natural_language - Pure MCP Flow: Natural Language → Gemini AI → MCP Tool")
+    print("  4. create_and_approve - CREATE → APPROVE (express, skip update)")
     print("\n🔗 Server running - Ready for MCP client connections!")
     mcp.run()
