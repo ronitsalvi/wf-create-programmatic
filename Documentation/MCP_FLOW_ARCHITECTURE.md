@@ -49,14 +49,30 @@ Similarly:
 ### Architecture Overview
 
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Natural   │───▶│   Claude    │───▶│   Gemini    │───▶│  Leegality  │
-│  Language   │    │    Code     │    │     AI      │    │    APIs     │
-│  Request    │    │ (MCP Client)│    │(JSON Gen)   │    │ (Workflow)  │
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Natural   │───▶│   Claude    │───▶│MCP Tool #1  │───▶│   Gemini    │───▶│MCP Tool #2  │───▶│  Leegality  │
+│  Language   │    │    Code     │    │(NLP Bridge)│    │     AI      │    │(Workflow)   │    │    APIs     │
+│  Request    │    │ (MCP Client)│    │             │    │(JSON Gen)   │    │             │    │ (CREATE)   │
+└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
+                                                                                  │
+                                                                                  ▼
+                                                                          ┌─────────────┐
+                                                                          │  Leegality  │
+                                                                          │    APIs     │
+                                                                          │ (UPDATE)    │
+                                                                          └─────────────┘
+                                                                                  │
+                                                                                  ▼
+                                                                          ┌─────────────┐
+                                                                          │  Leegality  │
+                                                                          │    APIs     │
+                                                                          │ (APPROVE)   │
+                                                                          └─────────────┘
 ```
 
-### 1. Entry Point: MCP Tool
+**Pure MCP Tool Chain**: `create_workflow_from_natural_language` → `create_workflow` → Leegality APIs
+
+### 1. Entry Point: MCP Tool #1 (Natural Language Bridge)
 
 **File**: `mcp_server.py`  
 **Function**: `create_workflow_from_natural_language()`
@@ -65,38 +81,58 @@ Similarly:
 @mcp.tool()
 def create_workflow_from_natural_language(requirement: str, bearer_token: str) -> dict:
     """
-    Natural Language → Gemini AI → JSON → CREATE → UPDATE → APPROVE
+    Pure MCP Flow: Natural Language → Gemini AI → MCP Tool (create_workflow) → Leegality APIs
     """
+    # STEP 1: Natural Language → Gemini AI → JSON
     api = LeegalityWorkflowAPI(bearer_token)
-    result = api.create_workflow_from_text(requirement)
+    workflow_json = api._parse_with_ai(requirement)
+    
+    # STEP 2: Call MCP tool with generated JSON
+    result = create_workflow(workflow_json, bearer_token)
+    
+    # Add MCP-specific metadata
+    result['flow_completed'] = 'Natural Language → Gemini AI → MCP Tool (create_workflow) → Leegality APIs'
+    result['mcp_tool'] = 'create_workflow_from_natural_language → create_workflow'
     return result
 ```
 
 **What happens here:**
 - Claude Code calls this MCP tool with natural language
-- Tool initializes the Leegality API client
-- Delegates to the main workflow creation method
+- Tool calls Gemini AI to generate structured JSON
+- **Pure MCP Flow**: Calls another MCP tool (`create_workflow`) instead of Python methods
+- Returns workflow with MCP tool chain metadata
 
-### 2. Natural Language Processing
+### 2. MCP Tool #2 (Workflow Creation)
 
-**File**: `leegality_workflow_api.py`  
-**Function**: `create_workflow_from_text()`
+**File**: `mcp_server.py`  
+**Function**: `create_workflow()`
 
 ```python
-def create_workflow_from_text(self, user_requirement: str) -> Dict[str, Any]:
-    # Parse natural language input with AI - returns complete JSON
-    workflow_payload = self._parse_natural_language(user_requirement)
+@mcp.tool()
+def create_workflow(workflow_json: dict, bearer_token: str) -> dict:
+    """
+    CREATE → UPDATE → APPROVE (full new workflow creation)
+    """
+    api = LeegalityWorkflowAPI(bearer_token)
     
-    # Execute 3-step workflow creation
     # STEP 1: Create workflow
-    # STEP 2: Update workflow with AI-generated JSON
+    workflow_data = api._step1_create_workflow()
+    workflow_id = workflow_data['workflow_id']
+    version = workflow_data['version']
+    
+    # STEP 2: Update workflow with JSON data
+    update_result = api._step2_update_workflow(workflow_id, version, workflow_json)
+    
     # STEP 3: Approve workflow
+    approve_result = api._step3_approve_workflow(workflow_id, version)
+    
+    return {'success': True, 'workflow_id': workflow_id, 'status': 'PUBLISHED'}
 ```
 
 **Process breakdown:**
-1. **Input**: Raw natural language string
-2. **AI Processing**: Gemini API converts to structured JSON
-3. **Workflow Execution**: 3-step Leegality API calls
+1. **Input**: Structured JSON from Gemini AI
+2. **MCP Tool Execution**: Pure MCP tool handles workflow creation
+3. **Leegality API Integration**: 3-step workflow process (CREATE → UPDATE → APPROVE)
 4. **Output**: Published workflow with ID
 
 ### 3. Gemini AI Integration
@@ -246,23 +282,28 @@ Need 1 reviewer (Internal Checker) and 1 signer (John) with Aadhaar eSign."
 
 **Step-by-Step Execution**:
 
-1. **Claude Code**: Receives natural language, calls MCP tool
+1. **Claude Code**: Receives natural language, calls MCP Tool #1
    ```python
    create_workflow_from_natural_language(requirement, bearer_token)
    ```
 
-2. **MCP Server**: Routes to main API integration
+2. **MCP Tool #1**: Processes natural language with Gemini AI
    ```python
-   api.create_workflow_from_text(requirement)
+   workflow_json = api._parse_with_ai(requirement)
    ```
 
-3. **Gemini AI Call**: Processes enhanced NLP prompt
+3. **MCP Tool #1**: Calls MCP Tool #2 with generated JSON
+   ```python
+   result = create_workflow(workflow_json, bearer_token)
+   ```
+
+4. **Gemini AI Call**: Processes enhanced NLP prompt
    ```
    🤖 Processing with Gemini AI...
    URL: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent
    ```
 
-4. **JSON Generation**: Gemini returns structured workflow
+5. **JSON Generation**: Gemini returns structured workflow
    ```json
    {
      "workflowData": {
@@ -280,7 +321,7 @@ Need 1 reviewer (Internal Checker) and 1 signer (John) with Aadhaar eSign."
    }
    ```
 
-5. **Leegality API Calls**: 3-step workflow creation
+6. **MCP Tool #2**: Executes 3-step workflow creation
    ```
    📋 Step 1: Creating workflow...
    POST /workflow-manager/v1/workflow → 201 CREATED
@@ -292,14 +333,15 @@ Need 1 reviewer (Internal Checker) and 1 signer (John) with Aadhaar eSign."
    PATCH /workflow-manager/v1/workflow/approve → 200 OK
    ```
 
-6. **Result**: Published workflow
+7. **Result**: Published workflow with MCP metadata
    ```json
    {
      "success": true,
      "workflow_id": "68acb7ca-f202-421d-baa8-0aeb0b23c454",
      "status": "PUBLISHED",
-     "flow_completed": "Natural Language → Gemini AI → CREATE → UPDATE → APPROVE",
-     "mcp_tool": "create_workflow_from_natural_language"
+     "flow_completed": "Natural Language → Gemini AI → MCP Tool (create_workflow) → Leegality APIs",
+     "mcp_tool": "create_workflow_from_natural_language → create_workflow",
+     "ai_generated_json": true
    }
    ```
 
@@ -309,9 +351,11 @@ Need 1 reviewer (Internal Checker) and 1 signer (John) with Aadhaar eSign."
 
 ### 1. **Separation of Concerns**
 - **Claude Code**: MCP client and user interface
+- **MCP Tool #1**: Natural language to AI processing bridge
 - **Gemini AI**: Specialized JSON generation  
+- **MCP Tool #2**: Workflow creation and Leegality API orchestration
 - **Leegality APIs**: Workflow management and execution
-- **MCP Server**: Protocol bridge and orchestration
+- **MCP Server**: Pure protocol compliance with tool chaining
 
 ### 2. **Scalability**  
 - **Stateless design**: Each request is independent
@@ -326,7 +370,8 @@ Need 1 reviewer (Internal Checker) and 1 signer (John) with Aadhaar eSign."
 - **Comprehensive logging**: Full audit trail of operations
 
 ### 4. **Flexibility**
-- **Multiple entry points**: Direct API calls or MCP tools
+- **Pure MCP architecture**: All operations go through MCP tools
+- **Tool composability**: MCP tools can call other MCP tools
 - **Configurable AI models**: Can switch from Gemini to other models
 - **Template variations**: Different workflow templates supported
 - **Dynamic field control**: UI behavior configurable per requirement
@@ -417,13 +462,55 @@ else:
 
 ---
 
+## 🚀 Pure MCP Flow Benefits
+
+### Why Pure MCP Architecture Matters
+
+**Before (Hybrid Approach):**
+```python
+# MCP Tool called Python methods directly
+@mcp.tool()
+def create_workflow_from_natural_language(requirement, bearer_token):
+    result = api.create_workflow_from_text(requirement)  # Direct Python call
+    return result
+```
+
+**After (Pure MCP Flow):**
+```python
+# MCP Tool calls other MCP tools
+@mcp.tool()
+def create_workflow_from_natural_language(requirement, bearer_token):
+    workflow_json = api._parse_with_ai(requirement)      # AI processing
+    result = create_workflow(workflow_json, bearer_token) # MCP tool call
+    return result
+```
+
+### Key Advantages
+
+1. **True Protocol Compliance**: All operations go through MCP tools, not Python methods
+2. **Tool Composability**: MCP tools can orchestrate other MCP tools
+3. **Better Separation**: Natural language processing vs workflow creation are distinct tools
+4. **Metadata Tracking**: Clear tool chain visibility (`tool1 → tool2`)
+5. **Future Extensibility**: Easy to add more MCP tools in the chain
+
+### Real-World Benefits
+
+- **Debugging**: Can trace exactly which MCP tool failed
+- **Monitoring**: Track performance of individual MCP tools
+- **Testing**: Can test each MCP tool independently
+- **Scaling**: Can deploy different MCP tools on different servers
+- **Maintenance**: Update AI processing without touching workflow creation
+
+---
+
 ## 🎯 Conclusion
 
-The MCP flow architecture successfully bridges the gap between natural language input and complex workflow creation through:
+The Pure MCP Flow architecture successfully bridges the gap between natural language input and complex workflow creation through:
 
-1. **Intelligent AI processing** for natural language understanding
-2. **Robust API integration** with comprehensive error handling  
-3. **Flexible architecture** supporting multiple use cases
-4. **Production-ready implementation** with security and performance considerations
+1. **Pure MCP Protocol Compliance** with tool chaining instead of direct Python calls
+2. **Intelligent AI processing** for natural language understanding through Gemini integration
+3. **Robust API integration** with comprehensive error handling via dedicated MCP tools
+4. **True separation of concerns** with composable MCP tools for different responsibilities
+5. **Production-ready implementation** with security, performance, and maintainability considerations
 
-This system demonstrates the power of combining AI-driven natural language processing with enterprise-grade API integration through the Model Context Protocol standard.
+This system demonstrates the power of **Pure Model Context Protocol architecture** where AI-powered natural language processing seamlessly integrates with enterprise-grade API operations through true MCP tool chaining, eliminating hybrid approaches and ensuring complete protocol compliance.
