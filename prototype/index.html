@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leegality AI Assistant - Workflow Builder Prototype</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="prototype-container">
+        <!-- Main Workflow Interface (Simulated) -->
+        <div class="main-interface">
+            <div class="leegality-header">
+                <div class="header-left">
+                    <div class="logo">
+                        <i class="fas fa-file-signature"></i>
+                        <span>Leegality</span>
+                        <span class="beta-badge">BETA</span>
+                    </div>
+                    <div class="workflow-info">
+                        <span class="workflow-title">Run Workflow | NLP_Workflow_1758719428</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="workflow-steps">
+                <div class="step-indicator">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Back to Workflow</span>
+                </div>
+                
+                <div class="steps-nav">
+                    <div class="step active">
+                        <div class="step-dot filled"></div>
+                        <span>Create</span>
+                    </div>
+                    <div class="step">
+                        <div class="step-dot"></div>
+                        <span>Invite</span>
+                    </div>
+                    <div class="step">
+                        <div class="step-dot"></div>
+                        <span>Finalise</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <div class="document-tabs">
+                    <div class="tab active" data-doc="loan-agreement">Loan Agreement</div>
+                    <div class="tab" data-doc="sanction-letter">Sanction Letter</div>
+                    <div class="tab" data-doc="kfs">KFS</div>
+                    <button class="add-document-btn">+ Add Document</button>
+                </div>
+
+                <div class="document-config">
+                    <div class="config-header">
+                        <h2>Configure Documents</h2>
+                        <button class="delete-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+
+                    <div class="upload-section">
+                        <div class="upload-area">
+                            <h3>Sub-Documents</h3>
+                            <p class="upload-info">0 out of 10 File(s) uploaded | 0 MB out of 15 MB used</p>
+                            
+                            <div class="upload-zone">
+                                <div class="upload-icon">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <p>Upload PDFs or drag and drop</p>
+                                <p class="file-info">PDF (max. 15 MB)</p>
+                            </div>
+                        </div>
+
+                        <div class="uploaded-section">
+                            <h4>Uploaded Sub-Documents</h4>
+                            <div class="no-files">No files uploaded yet</div>
+                        </div>
+                    </div>
+
+                    <div class="document-details">
+                        <div class="form-group">
+                            <label for="document-name">Document Name *</label>
+                            <input type="text" id="document-name" value="Loan Agreement" class="form-input">
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group half">
+                                <label for="internal-ref">Internal Reference Number *</label>
+                                <input type="text" id="internal-ref" placeholder="Enter here" class="form-input">
+                            </div>
+                            <div class="form-group half">
+                                <label for="document-folder">Document Folder</label>
+                                <select id="document-folder" class="form-input">
+                                    <option>Select</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Attach Stamping</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="stamping" class="toggle-input">
+                                    <label for="stamping" class="toggle-label"></label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Reference Attachment</label>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="reference" class="toggle-input">
+                                    <label for="reference" class="toggle-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bottom-actions">
+                        <button class="btn btn-secondary">Save as Draft</button>
+                        <button class="btn btn-primary">Proceed</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant Side Panel -->
+        <div class="ai-assistant-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fas fa-robot"></i>
+                    <span>AI Workflow Assistant</span>
+                </div>
+                <button class="panel-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="panel-status">
+                <div class="status-info">
+                    <span class="status-label">Current:</span>
+                    <span class="status-value" id="current-status">3 documents, 0 people</span>
+                </div>
+                <div class="status-phase">Document configuration phase</div>
+            </div>
+
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="natural-language">
+                    <i class="fas fa-comments"></i>
+                    Natural Language
+                </button>
+                <button class="tab-btn" data-tab="traditional-builder">
+                    <i class="fas fa-list"></i>
+                    Builder
+                </button>
+            </div>
+
+            <div class="tab-content">
+                <!-- Natural Language Tab -->
+                <div id="natural-language-tab" class="tab-panel active">
+                    <div class="nlp-input-section">
+                        <label for="nlp-input">Describe your workflow changes:</label>
+                        <textarea 
+                            id="nlp-input" 
+                            class="nlp-textarea" 
+                            placeholder="Examples:
+• Add 2 signers with Aadhaar eSign
+• Need 1 reviewer for all documents  
+• Create signing order: manager first, then customer
+• Add group signer for bank team"
+                            rows="6"
+                        ></textarea>
+                    </div>
+
+                    <div class="suggestions-section" id="suggestions">
+                        <div class="suggestions-header">💡 Smart suggestions:</div>
+                        <div class="suggestions-list">
+                            <button class="suggestion-chip">Add reviewer role</button>
+                            <button class="suggestion-chip">Configure signing order</button>
+                            <button class="suggestion-chip">Set up eSign types</button>
+                            <button class="suggestion-chip">Add group signers</button>
+                        </div>
+                    </div>
+
+                    <div class="nlp-actions">
+                        <button class="btn btn-secondary" id="preview-changes">
+                            <i class="fas fa-eye"></i>
+                            Preview Changes
+                        </button>
+                        <button class="btn btn-primary" id="apply-changes">
+                            <i class="fas fa-magic"></i>
+                            Apply to Workflow
+                        </button>
+                    </div>
+
+                    <div class="preview-section" id="preview-section" style="display: none;">
+                        <div class="preview-header">
+                            <i class="fas fa-search"></i>
+                            <span>Changes Preview</span>
+                        </div>
+                        <div class="preview-content" id="preview-content">
+                            <!-- Preview content will be dynamically generated -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Traditional Builder Tab -->
+                <div id="traditional-builder-tab" class="tab-panel">
+                    <div class="builder-section">
+                        <div class="section-header">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Documents (3)</span>
+                        </div>
+                        <div class="items-list" id="documents-list">
+                            <div class="item-card document-card active">
+                                <div class="item-info">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span class="item-name">Loan Agreement</span>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="action-btn edit-btn">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete-btn">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="item-card document-card">
+                                <div class="item-info">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span class="item-name">Sanction Letter</span>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="action-btn edit-btn">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete-btn">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="item-card document-card">
+                                <div class="item-info">
+                                    <i class="fas fa-file-pdf"></i>
+                                    <span class="item-name">KFS</span>
+                                </div>
+                                <div class="item-actions">
+                                    <button class="action-btn edit-btn">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="action-btn delete-btn">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="add-item-btn">
+                            <i class="fas fa-plus"></i>
+                            Add Document
+                        </button>
+                    </div>
+
+                    <div class="builder-section">
+                        <div class="section-header">
+                            <i class="fas fa-users"></i>
+                            <span>People (<span id="people-count">0</span>)</span>
+                        </div>
+                        <div class="items-list" id="people-list">
+                            <div class="empty-state">
+                                <i class="fas fa-user-plus"></i>
+                                <p>No people added yet</p>
+                                <p class="empty-description">Add signers, reviewers, or other participants</p>
+                            </div>
+                        </div>
+                        <button class="add-item-btn" id="add-person-btn">
+                            <i class="fas fa-plus"></i>
+                            Add Person
+                        </button>
+                    </div>
+
+                    <div class="builder-section">
+                        <div class="section-header">
+                            <i class="fas fa-cog"></i>
+                            <span>Settings</span>
+                        </div>
+                        <div class="settings-list">
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-name">Sequential signing</span>
+                                    <span class="setting-description">Participants must sign in order</span>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="sequential-signing" class="toggle-input">
+                                    <label for="sequential-signing" class="toggle-label"></label>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-info">
+                                    <span class="setting-name">Allow document upload</span>
+                                    <span class="setting-description">Signers can upload additional documents</span>
+                                </div>
+                                <div class="toggle-switch">
+                                    <input type="checkbox" id="allow-upload" class="toggle-input">
+                                    <label for="allow-upload" class="toggle-label"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="builder-actions">
+                        <button class="btn btn-primary" id="update-workflow">
+                            <i class="fas fa-sync"></i>
+                            Update Workflow
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Person Modal -->
+    <div id="person-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Person</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="person-role">Role *</label>
+                    <select id="person-role" class="form-input">
+                        <option value="signer">Signer (signs documents)</option>
+                        <option value="reviewer">Reviewer (reviews & approves)</option>
+                        <option value="cc">CC (copy only)</option>
+                        <option value="groupSigner">Group Signer (team signing)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="person-name">Name (Optional)</label>
+                    <input type="text" id="person-name" class="form-input" placeholder="Leave empty for runtime configuration">
+                </div>
+                <div class="form-group">
+                    <label for="person-email">Email (Optional)</label>
+                    <input type="email" id="person-email" class="form-input" placeholder="Leave empty for runtime configuration">
+                </div>
+                <div class="form-group">
+                    <label for="person-esign">eSign Type (Optional)</label>
+                    <select id="person-esign" class="form-input">
+                        <option value="">Select eSign type</option>
+                        <option value="aadhaar">Aadhaar eSign</option>
+                        <option value="dsc">DSC (Digital Signature Certificate)</option>
+                        <option value="virtual">Virtual eSign</option>
+                        <option value="none">No eSign required</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-person">Cancel</button>
+                <button class="btn btn-primary" id="save-person">Add Person</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

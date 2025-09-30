@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leegality Visual Workflow Builder</title>
+    <link rel="stylesheet" href="workflow-builder.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Bootstrap Q&A Overlay -->
+    <div id="bootstrap-overlay" class="overlay active">
+        <div class="overlay-content">
+            <div class="overlay-header">
+                <h2>🚀 Let's Create Your Workflow</h2>
+                <button id="close-overlay" class="close-btn">&times;</button>
+            </div>
+            
+            <!-- Step 1: Documents -->
+            <div id="step-1" class="step-panel active">
+                <div class="step-header">
+                    <h3>📄 Step 1: Documents</h3>
+                    <p>What documents need to be signed or reviewed?</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Number of documents:</label>
+                    <input type="number" id="doc-count" min="1" max="10" value="3" class="number-input">
+                </div>
+                
+                <div class="form-group">
+                    <label>Document names (optional):</label>
+                    <textarea id="doc-names" placeholder="Enter comma-separated names, e.g.: Loan Agreement, Sanction Letter, Bank Guarantee" class="text-area"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="need-stamping"> Need stamping?
+                    </label>
+                </div>
+                
+                <div id="stamping-details" class="conditional-section" style="display: none;">
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label>Jurisdiction:</label>
+                            <select id="stamp-jurisdiction" class="select-input">
+                                <option value="delhi">Delhi</option>
+                                <option value="maharashtra">Maharashtra</option>
+                                <option value="karnataka">Karnataka</option>
+                                <option value="tamil-nadu">Tamil Nadu</option>
+                            </select>
+                        </div>
+                        <div class="form-col">
+                            <label>Denomination:</label>
+                            <select id="stamp-denomination" class="select-input">
+                                <option value="50">₹50</option>
+                                <option value="100">₹100</option>
+                                <option value="500">₹500</option>
+                                <option value="1000">₹1000</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Placement:</label>
+                        <label class="radio-label"><input type="radio" name="stamp-placement" value="before-first" checked> Before first page</label>
+                        <label class="radio-label"><input type="radio" name="stamp-placement" value="merged-start"> Merged at document start</label>
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button id="next-to-step-2" class="btn btn-primary">Next: Add People →</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Invitees -->
+            <div id="step-2" class="step-panel">
+                <div class="step-header">
+                    <h3>👥 Step 2: People</h3>
+                    <p>Who needs to be involved in this workflow?</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Number of people:</label>
+                    <input type="number" id="people-count" min="1" max="10" value="2" class="number-input">
+                </div>
+                
+                <div class="form-group">
+                    <label>People details (optional):</label>
+                    <textarea id="people-details" placeholder="e.g.: Ronit (Signer, ronit@leegality.com, Aadhaar eSign), Bank Reviewer (Reviewer)" class="text-area"></textarea>
+                    <div class="help-text">
+                        Format: Name (Role, Email, eSign Type)<br>
+                        Roles: Signer, Reviewer, CC, Group Signer<br>
+                        eSign: Aadhaar, DSC, Virtual
+                    </div>
+                </div>
+                
+                <div class="step-actions">
+                    <button id="back-to-step-1" class="btn btn-secondary">← Back</button>
+                    <button id="create-workflow" class="btn btn-primary">Create Workflow 🎉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Leegality</span>
+                    <span class="version-badge">Visual Builder</span>
+                </div>
+                <div class="workflow-title">
+                    <span id="workflow-name">Untitled Workflow</span>
+                    <i class="fas fa-edit edit-title" title="Edit workflow name"></i>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button id="restart-btn" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Start Over
+                </button>
+                <button id="undo-btn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-undo"></i>
+                </button>
+                <button id="redo-btn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-redo"></i>
+                </button>
+                <button id="publish-btn" class="btn btn-success">
+                    <i class="fas fa-rocket"></i> Publish
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Graph Canvas (Left Pane) -->
+            <div class="graph-pane">
+                <div class="graph-header">
+                    <h3>📊 Visual Workflow</h3>
+                    <div class="graph-controls">
+                        <button id="zoom-out" class="control-btn">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <span id="zoom-level">100%</span>
+                        <button id="zoom-in" class="control-btn">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                        <button id="fit-to-screen" class="control-btn">
+                            <i class="fas fa-expand-arrows-alt"></i>
+                        </button>
+                        <button id="toggle-palette" class="control-btn active">
+                            <i class="fas fa-palette"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Node Palette -->
+                <div id="node-palette" class="node-palette">
+                    <div class="palette-header">
+                        <h4>🎨 Add Elements</h4>
+                    </div>
+                    <div class="palette-items">
+                        <div class="palette-item" data-type="document">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Document</span>
+                        </div>
+                        <div class="palette-item" data-type="stamp">
+                            <i class="fas fa-stamp"></i>
+                            <span>Stamp</span>
+                        </div>
+                        <div class="palette-item" data-type="invitee">
+                            <i class="fas fa-user"></i>
+                            <span>Person</span>
+                        </div>
+                        <div class="palette-item" data-type="stage">
+                            <i class="fas fa-layer-group"></i>
+                            <span>Stage</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graph Canvas -->
+                <div id="graph-canvas" class="graph-canvas">
+                    <svg id="graph-svg" width="100%" height="100%">
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                                    refX="10" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1" />
+                            </marker>
+                            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" stroke-width="1" opacity="0.3"/>
+                            </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#grid)" />
+                        <g id="connections"></g>
+                        <g id="nodes"></g>
+                    </svg>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="graph-empty-state" class="empty-state">
+                    <i class="fas fa-project-diagram"></i>
+                    <h3>Start Building Your Workflow</h3>
+                    <p>Use the natural language panel on the right or drag elements from the palette above</p>
+                    <button id="show-examples" class="btn btn-primary">Show Examples</button>
+                </div>
+            </div>
+
+            <!-- Natural Language Pane (Right Pane) -->
+            <div class="nl-pane">
+                <div class="nl-header">
+                    <h3>🤖 Natural Language Builder</h3>
+                    <div class="nl-status" id="nl-status">
+                        <span class="status-indicator ready"></span>
+                        <span>Ready</span>
+                    </div>
+                </div>
+
+                <!-- Natural Language Input -->
+                <div class="nl-input-section">
+                    <div class="input-group">
+                        <textarea id="nl-input" placeholder="Describe what you want to add or change...
+
+Examples:
+• Add 3 documents: Contract, NDA, Invoice
+• Add signer John with Aadhaar eSign  
+• Place Delhi ₹50 stamp on Contract
+• Create Stage 1: John signs first
+• Link John to Contract and NDA" 
+                                  class="nl-textarea" rows="6"></textarea>
+                        <button id="process-nl" class="btn btn-primary">
+                            <i class="fas fa-magic"></i> Process
+                        </button>
+                    </div>
+                    
+                    <!-- Quick Commands -->
+                    <div class="quick-commands">
+                        <div class="commands-header">💡 Quick Commands</div>
+                        <div class="command-buttons" id="quick-commands">
+                            <button class="command-btn" data-command="Add Contract document">Add Document</button>
+                            <button class="command-btn" data-command="Add signer John">Add Signer</button>
+                            <button class="command-btn" data-command="Add Delhi ₹50 stamp">Add Stamp</button>
+                            <button class="command-btn" data-command="Create Stage 1">Add Stage</button>
+                            <button class="command-btn" data-command="Add reviewer Sarah">Add Reviewer</button>
+                            <button class="command-btn" data-command="Link John to Contract">Link Elements</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clarification Panel -->
+                <div id="clarification-panel" class="clarification-panel" style="display: none;">
+                    <div class="clarification-header">
+                        <h4>🔍 Need More Information</h4>
+                        <button id="skip-clarification" class="skip-btn">
+                            <i class="fas fa-forward"></i> Skip - Configure Later
+                        </button>
+                    </div>
+                    <div id="clarification-content" class="clarification-content">
+                        <!-- Dynamic clarification content will be inserted here -->
+                    </div>
+                    <div class="clarification-actions">
+                        <button id="cancel-clarification" class="btn btn-secondary">Cancel</button>
+                        <button id="apply-clarification" class="btn btn-primary">Apply</button>
+                    </div>
+                </div>
+
+                <!-- Natural Language Summary -->
+                <div class="nl-summary-section">
+                    <div class="summary-header">
+                        <h4>📝 Workflow Summary</h4>
+                        <button id="copy-summary" class="copy-btn" title="Copy summary">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                    <div id="nl-summary" class="nl-summary">
+                        <div class="summary-placeholder">
+                            <i class="fas fa-file-alt"></i>
+                            <p>Your workflow summary will appear here as you add elements</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diff Panel -->
+                <div class="diff-section">
+                    <div class="diff-header">
+                        <h4>📋 Recent Changes</h4>
+                        <button id="clear-diff" class="clear-btn" title="Clear changes">
+                            <i class="fas fa-broom"></i>
+                        </button>
+                    </div>
+                    <div id="diff-content" class="diff-content">
+                        <div class="diff-placeholder">
+                            <i class="fas fa-clock"></i>
+                            <p>Changes will be tracked here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Node Properties Modal -->
+    <div id="properties-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="properties-title">Node Properties</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div id="properties-body" class="modal-body">
+                <!-- Dynamic properties content -->
+            </div>
+            <div class="modal-footer">
+                <button id="delete-node" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button id="cancel-properties" class="btn btn-secondary">Cancel</button>
+                <button id="save-properties" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Example Workflows Modal -->
+    <div id="examples-modal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>📚 Example Workflows</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="examples-grid">
+                    <div class="example-card" data-example="bank-loan">
+                        <div class="example-preview">
+                            <i class="fas fa-university"></i>
+                        </div>
+                        <h4>Bank Loan Process</h4>
+                        <p>3 documents, stamps, sequential signing with reviewer approval</p>
+                        <div class="example-stats">
+                            <span>3 docs</span> • <span>2 people</span> • <span>1 stamp</span>
+                        </div>
+                    </div>
+                    
+                    <div class="example-card" data-example="simple-contract">
+                        <div class="example-preview">
+                            <i class="fas fa-handshake"></i>
+                        </div>
+                        <h4>Simple Contract</h4>
+                        <p>Basic two-party agreement with Aadhaar eSign</p>
+                        <div class="example-stats">
+                            <span>1 doc</span> • <span>2 people</span> • <span>0 stamps</span>
+                        </div>
+                    </div>
+                    
+                    <div class="example-card" data-example="employee-onboarding">
+                        <div class="example-preview">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <h4>Employee Onboarding</h4>
+                        <p>Multiple documents with HR review and sequential signing</p>
+                        <div class="example-stats">
+                            <span>4 docs</span> • <span>3 people</span> • <span>0 stamps</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="workflow-builder.js"></script>
+</body>
+</html>
